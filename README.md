@@ -1,25 +1,20 @@
-#ifndef __STM32F10x_IT_H
-#define __STM32F10x_IT_H
+#ifndef __SWITCH_FUNCTION_H_
+#define __SWITCH_FUNCTION_H_
 
-/* Includes ------------------------------------------------------------------*/
-#include "stm32f10x.h"
 
-/* Exported types ------------------------------------------------------------*/
-/* Exported constants --------------------------------------------------------*/
-/* Exported macro ------------------------------------------------------------*/
-/* Exported functions ------------------------------------------------------- */
+#define DEBUG_USARTx USART1
 
-void NMI_Handler(void);
-void HardFault_Handler(void);
-void MemManage_Handler(void);
-void BusFault_Handler(void);
-void UsageFault_Handler(void);
-void SVC_Handler(void);
-void DebugMon_Handler(void);
-void PendSV_Handler(void);
-void SysTick_Handler(void);
+//以下两者不能同时使用
+#define IR_TRACK_SWITCH 0  //4路循迹开关
+#define ELE_SWITCH      0  //电磁巡线开关 
+#define CCD_SWITCH      0 //CCD开关
 
-#endif /* __STM32F10x_IT_H */
-void SysTick_Handler(void)
-{
-}
+#define K210_SWITCH     0 //k210初始化.
+
+//使用雷达注意事项
+//1.把不用的外设都给释放掉 特别是超声波和定时器 减小cpu负担
+//2.雷达数据处理需要在main函数里面处理吧，减少中断占用时间
+#define Lidar_SWITCH    0 //雷达开关
+
+#endif
+
