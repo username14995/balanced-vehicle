@@ -1,75 +1,85 @@
-/**
-* @par Copyright (C): 2018-2028, Shenzhen Yahboom Tech
-* @file         // main.c
-* @author       // lly
-* @version      // V1.0
-* @date         // 240628
-* @brief        // ������� Program entry
-* @details      
-* @par History  // �޸���ʷ��¼�б���ÿ���޸ļ�¼Ӧ�����޸����ڡ��޸��߼�
-*               // �޸����ݼ���  Modification history list, each modification record should include the modification date, modifier and a brief description of the modification content
-*/ 
-
-#include "AllHeader.h"
-#include "intsever.h"
-//ע��:������������ʱ��Ҫ�ж��Ƿ���������ѹ
-//Attention: When operating the buzzer, check if it is at normal voltage
-
-uint8_t GET_Angle_Way=2;                             //��ȡ�Ƕȵ��㷨��1����Ԫ��  2��������  3�������˲�  //Algorithm for obtaining angles, 1: Quaternion 2: Kalman 3: Complementary filtering
-float Angle_Balance,Gyro_Balance,Gyro_Turn;     		//ƽ����� ƽ�������� ת�������� //Balance tilt angle balance gyroscope steering gyroscope
-int Motor_Left,Motor_Right;                 	  		//���PWM���� //Motor PWM variable
-int Temperature;                                		//�¶ȱ��� 		//Temperature variable
-float Acceleration_Z;                           		//Z����ٶȼ�  //Z-axis accelerometer
-int Voltage,Mid_Angle;                          		//��ص�ѹ������صı�������е��ֵ Battery voltage sampling related variables, mechanical median
-float Move_X,Move_Z; //Move_X:ǰ���ٶ�  Move_Z��ת���ٶ�  //Move_X: Forward speed Move_Z: Steering speed
-u8 Stop_Flag = 1; //0:��ʼ 1:ֹͣ  //0: Start 1: Stop
+#ifndef __MYENUM_H_
+#define __MYENUM_H_
 
 
-char showbuf[20]={'\0'};
-
-extern u8 newLineReceived;
-extern u8 bulettohflag;
-
-int main(void)
-{	
-	Mid_Angle = 1; //����С������ȡ //Obtain based on the car
-	
-	
-	bsp_init();
-	
-	MPU6050_EXTI_Init();					//���жϷ������ŵ���� //This interrupt service function is placed last
-	
-	OLED_Draw_Line("put down key start!", 1, true, true); 
-
-	while(!Key1_State(1));
-
-	USART3_Send_U8('B');
-
-	Stop_Flag = 0; //��ʼ���� //Start controlling
-
-	
-	OLED_Draw_Line("start control!", 1, true, true); 
-	
+////JTAG模式设置定义 JTAG mode setting definition
+#define JTAG_SWD_DISABLE   0X02
+#define SWD_ENABLE         0X01
+#define JTAG_SWD_ENABLE    0X00
 
 
-	while(1)
-	{
-		
-		if (newLineReceived) //����ң�ط��� Bluetooth remote control service
-		{
-			ProtocolCpyData();
-			Protocol();
-		}
-		if(bulettohflag == 1) //�˷����ϱ������ݣ�app�����bug The data reported by this method may cause a bug in the app
-		{
-			bulettohflag = 0;
-			SendAutoUp();//�����Զ��ϱ����� Bluetooth automatically reports data 
-		}
-		
-		
-		sprintf(showbuf,"angle = %.2f  ",Angle_Balance);
-		OLED_Draw_Line(showbuf, 3, false, true); 
-	
-	}
-}
 
+//For specific implementation ideas, refer to Chapter 5 (pages 87 to 92) of <<CM3 Authoritative Guide>>.
+//IO port operation macro definition
+//具体实现思想,参考<<CM3权威指南>>第五章(87页~92页).
+//IO口操作宏定义
+#define BITBAND(addr, bitnum) ((addr & 0xF0000000)+0x2000000+((addr &0xFFFFF)<<5)+(bitnum<<2)) 
+#define MEM_ADDR(addr)  *((volatile unsigned long  *)(addr)) 
+#define BIT_ADDR(addr, bitnum)   MEM_ADDR(BITBAND(addr, bitnum)) 
+//IO口地址映射    IO port address mapping
+#define GPIOA_ODR_Addr    (GPIOA_BASE+12) //0x4001080C 
+#define GPIOB_ODR_Addr    (GPIOB_BASE+12) //0x40010C0C 
+#define GPIOC_ODR_Addr    (GPIOC_BASE+12) //0x4001100C 
+#define GPIOD_ODR_Addr    (GPIOD_BASE+12) //0x4001140C 
+#define GPIOE_ODR_Addr    (GPIOE_BASE+12) //0x4001180C 
+#define GPIOF_ODR_Addr    (GPIOF_BASE+12) //0x40011A0C    
+#define GPIOG_ODR_Addr    (GPIOG_BASE+12) //0x40011E0C    
+
+#define GPIOA_IDR_Addr    (GPIOA_BASE+8) //0x40010808 
+#define GPIOB_IDR_Addr    (GPIOB_BASE+8) //0x40010C08 
+#define GPIOC_IDR_Addr    (GPIOC_BASE+8) //0x40011008 
+#define GPIOD_IDR_Addr    (GPIOD_BASE+8) //0x40011408 
+#define GPIOE_IDR_Addr    (GPIOE_BASE+8) //0x40011808 
+#define GPIOF_IDR_Addr    (GPIOF_BASE+8) //0x40011A08 
+#define GPIOG_IDR_Addr    (GPIOG_BASE+8) //0x40011E08 
+ 
+//IO port operation, only for a single IO port!
+//Make sure the value of n is less than 16!
+//IO口操作,只对单一的IO口!
+//确保n的值小于16!
+#define PAout(n)   BIT_ADDR(GPIOA_ODR_Addr,n)  //输出 Output
+#define PAin(n)    BIT_ADDR(GPIOA_IDR_Addr,n)  //输入 Input
+
+#define PBout(n)   BIT_ADDR(GPIOB_ODR_Addr,n)  //输出 Output
+#define PBin(n)    BIT_ADDR(GPIOB_IDR_Addr,n)  //输入 Input
+
+#define PCout(n)   BIT_ADDR(GPIOC_ODR_Addr,n)  //输出 Output
+#define PCin(n)    BIT_ADDR(GPIOC_IDR_Addr,n)  //输入 Input
+
+#define PDout(n)   BIT_ADDR(GPIOD_ODR_Addr,n)  //输出 Output
+#define PDin(n)    BIT_ADDR(GPIOD_IDR_Addr,n)  //输入 Input
+
+#define PEout(n)   BIT_ADDR(GPIOE_ODR_Addr,n)  //输出 Output
+#define PEin(n)    BIT_ADDR(GPIOE_IDR_Addr,n)  //输入 Input
+
+#define PFout(n)   BIT_ADDR(GPIOF_ODR_Addr,n)  //输出 Output
+#define PFin(n)    BIT_ADDR(GPIOF_IDR_Addr,n)  //输入 Input
+
+#define PGout(n)   BIT_ADDR(GPIOG_ODR_Addr,n)  //输出 Output
+#define PGin(n)    BIT_ADDR(GPIOG_IDR_Addr,n)  //输入 Input
+
+//电机
+//Motor ML MR
+typedef enum {
+    MOTOR_ID_ML = 0,
+    MOTOR_ID_MR,
+    MAX_MOTOR
+} Motor_ID;
+
+/*小车运行状态枚举 Car running status enumeration */
+typedef enum enCarState_t{
+  enSTOP = 0,
+  enRUN,
+  enBACK,
+  enLEFT,
+  enRIGHT,
+  enTLEFT,
+  enTRIGHT,
+	enAvoid, //超声波躲避  Ultrasonic avoidance
+	enFollow, //超声波跟随  Ultrasonic Follow
+	enError
+}enCarState;
+
+
+
+#endif
